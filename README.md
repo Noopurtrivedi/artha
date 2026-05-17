@@ -1,0 +1,152 @@
+<div align="center">
+  <h1>🪔 Artha</h1>
+  <p><strong>Your work, done. Locally.</strong></p>
+  <p>Open-source local-first AI agent for document workflows, MCP tools, and agentic automation.<br/>No data leaves your machine. Ever.</p>
+  <br/>
+  <img src="https://img.shields.io/badge/status-early_dev-orange?style=flat-square" />
+  <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" />
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey?style=flat-square" />
+  <img src="https://img.shields.io/badge/LLM-Ollama_first-green?style=flat-square" />
+</div>
+
+---
+
+## What is Artha?
+
+**Artha** (Sanskrit: अर्थ — *purpose, livelihood, work*) is a local-first AI agent desktop app that lets you describe any task in plain English and have it executed, produced, and delivered entirely on your machine.
+
+Its primary differentiator: **document workflow generation**. Say "write a project proposal for client X" and Artha produces a polished, formatted DOCX. Say "build a 12-month financial model" and it produces a working XLSX. No cloud. No subscriptions. Your data stays yours.
+
+---
+
+## ✨ Features
+
+| Feature | Status |
+|---|---|
+| 🤖 Agentic ReAct loop (plan → execute → self-correct) | 🚧 In development |
+| 📄 DOCX generation from natural language | 🚧 In development |
+| 📊 PPTX presentation generation | 🚧 In development |
+| 📈 XLSX spreadsheet generation | 🚧 In development |
+| 📑 PDF report generation | 🚧 In development |
+| 🔌 MCP-native tool system (any MCP server = a skill) | 🚧 In development |
+| 🧠 Local RAG over your files (Ollama embeddings) | 🚧 In development |
+| 🦙 Ollama first-class (auto-detect, pull, switch models) | 🚧 In development |
+| 🔒 Zero telemetry by default | ✅ By design |
+| 🐳 Docker-sandboxed tool execution | 🚧 In development |
+
+---
+
+## 🏗️ Built On
+
+Artha stands on the shoulders of excellent open-source work:
+
+- **[OpenCoworkAI/open-cowork](https://github.com/OpenCoworkAI/open-cowork)** — Electron shell, MCP integration, Skills system
+- **[OpenHands](https://github.com/OpenHands/OpenHands)** — ReAct/CodeAct agentic orchestration patterns (MIT)
+- **[Jan AI](https://github.com/janhq/jan)** — Local LLM management UI/UX inspiration (MIT)
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- [Node.js 22+](https://nodejs.org)
+- [Ollama](https://ollama.ai) installed and running (`ollama serve`)
+- At least one model pulled: `ollama pull llama3.2:3b-instruct-q4_K_M`
+- [Docker Desktop](https://docker.com) (optional — for sandboxed tool execution)
+
+### Development
+
+```bash
+# Clone
+git clone https://github.com/YOUR_ORG/artha.git
+cd artha
+
+# Install all workspace dependencies
+npm install
+
+# Start dev server (renderer + electron)
+npm run dev
+```
+
+### Build for distribution
+
+```bash
+npm run dist
+# Output: dist/Artha-0.1.0.dmg  (macOS)
+#         dist/Artha Setup 0.1.0.exe  (Windows)
+#         dist/artha_0.1.0_amd64.deb  (Linux)
+```
+
+---
+
+## 📁 Project Structure
+
+```
+artha/
+├── packages/
+│   ├── app/                  # Electron main process (Node.js + TypeScript)
+│   │   └── src/
+│   │       ├── main.ts       # Electron entry point
+│   │       ├── preload.ts    # Secure IPC bridge (contextBridge)
+│   │       ├── agent/        # ReAct orchestration engine
+│   │       ├── llm/          # Single OpenAI-compat LLM client
+│   │       ├── mcp/          # MCP tool registry
+│   │       ├── rag/          # Local vector store + indexer
+│   │       ├── docs/         # Document generation (DOCX/PPTX/XLSX/PDF)
+│   │       ├── db/           # SQLite schema + migrations
+│   │       └── ipc/          # IPC handler registration
+│   └── renderer/             # React 19 UI (Vite + Tailwind + shadcn)
+│       └── src/
+│           ├── App.tsx
+│           ├── stores/       # Zustand state
+│           └── components/   # Chat, Sidebar, ExecutionLog, PlanApproval
+├── docs/                     # Architecture docs
+├── assets/                   # App icons
+└── scripts/                  # Dev helpers
+```
+
+---
+
+## 🧠 Architecture
+
+Artha uses a **TypeScript-first** stack for v1 — one runtime across main process and renderer, zero cross-language IPC:
+
+```
+[React UI] ←— contextBridge IPC —→ [Node.js Main Process]
+                                           │
+                          ┌────────────────┼────────────────┐
+                          ▼                ▼                ▼
+                   [Agent Orchestrator] [MCP Registry] [Doc Generator]
+                   (ReAct / CoT loop)  (MCP SDK)      (docx/pptx/xlsx)
+                          │
+                    [LLM Client]  ←— OpenAI-compat REST
+                          │
+                   [Ollama / LM Studio / llama.cpp]
+```
+
+See [`docs/architecture.md`](docs/architecture.md) for full detail.
+
+---
+
+## 🤝 Contributing
+
+We'd love contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+Key areas where help is wanted:
+- More MCP server integrations (GitHub, Notion, Calendar)
+- Better document templates and styling
+- GPU detection and hardware-aware model recommendations
+- Windows and Linux testing
+
+---
+
+## 📄 License
+
+MIT — see [LICENSE](LICENSE)
+
+---
+
+<div align="center">
+  <sub>Artha (अर्थ) — Sanskrit for purpose, meaning, livelihood. Your AI co-worker, locally.</sub>
+</div>

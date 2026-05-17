@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+packages/*/dist/
+dist/
+
+# Electron builder
+release/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Artha runtime data (never commit user data)
+artha-data/
+*.artha.db
+*.artha.db-shm
+*.artha.db-wal
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
+
+# LLM models (large files — use .artha/models/)
+*.gguf
+*.bin
+models/

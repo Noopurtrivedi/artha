@@ -1,0 +1,48 @@
+{
+  "name": "artha",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Artha — Local-first AI productivity agent. Document workflows, MCP tools, zero cloud.",
+  "workspaces": [
+    "packages/app",
+    "packages/renderer"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w packages/renderer\" \"wait-on http://localhost:5173 && npm run dev -w packages/app\"",
+    "build": "npm run build -w packages/renderer && npm run build -w packages/app",
+    "dist": "npm run build && electron-builder",
+    "lint": "eslint packages/*/src --ext .ts,.tsx",
+    "typecheck": "tsc -b packages/app/tsconfig.json packages/renderer/tsconfig.json"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "concurrently": "^8.2.2",
+    "electron": "^29.0.0",
+    "electron-builder": "^24.9.1",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.0",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "ai.artha.app",
+    "productName": "Artha",
+    "copyright": "Copyright © 2026 Artha",
+    "directories": { "output": "dist" },
+    "files": ["packages/app/dist/**/*", "packages/renderer/dist/**/*"],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "assets/icon.icns",
+      "target": [{ "target": "dmg", "arch": ["arm64", "x64"] }]
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [{ "target": "nsis", "arch": ["x64"] }]
+    },
+    "linux": {
+      "icon": "assets/icon.png",
+      "target": [{ "target": "deb", "arch": ["x64"] }],
+      "category": "Utility"
+    }
+  }
+}
