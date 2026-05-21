@@ -36,8 +36,12 @@ Give the agent first-class web access and an embedded Chromium tab it can co-pil
 - Settings UI: `packages/renderer/src/components/Settings/WebPanel.tsx`
 
 ### Open items
-- Confirm `BrowserController.bindWindow` is wired in `main.ts` and lifecycle events (close, navigation, crash) are handled.
-- Verify SearXNG default instance and cache TTL defaults are correct for shipped configuration.
+- ✅ `BrowserController.bindWindow(mainWindow)` is wired in `main.ts` before IPC registration; `did-navigate` / loading / title events stream to the renderer via `browser:state`.
+- ✅ Defaults confirmed in `tools/web.ts` `DEFAULT_WEB_CONFIG`: SearXNG instances `[searx.be, search.brave4u.com]` (overridable), cache TTL 3600s, robots respected, 10s timeout, 5MB cap.
+- ✅ Citation collector shared with browser tools via `recordCitation` (exported from `tools/web.ts`); browser navigations/reads become chat citations.
+- ✅ `agent:cancelTask` calls `BrowserController.cancelHandoff()` so the Stop button can't deadlock a pending handoff.
+- Crash recovery for the `BrowserView` (`render-process-gone`) is not yet handled — a crashed tab currently leaves a blank pane until re-navigated.
+- `browser_screenshot` returns viewport-only PNG (`capturePage`); full-page capture via CDP is deferred.
 
 ---
 
@@ -250,10 +254,12 @@ Sidebar (`Sidebar.tsx`) and event wiring in `App.tsx` subscribe to: `agent:token
 ## 10. Remaining Work & Validation Checklist
 
 Before any of this can ship:
-- [ ] Type-check entire workspace (`npm run typecheck`) — likely broken given the surface area touched.
-- [ ] Run the app end-to-end: launch agent, exercise each new tool, confirm DB tables populate.
-- [ ] Verify Electron `BrowserView` lifecycle (creation, attach/detach, crash recovery).
-- [ ] Confirm SearXNG configurability (no hardcoded instance shipped).
+- [x] Type-check entire workspace (`npm run typecheck`) — **passes clean**.
+- [x] Production build (`npm run build`) — **passes** (renderer ~379KB gzip 108KB; app `tsc` clean).
+- [x] Confirm SearXNG configurability — instances are read from `users.settings_json.web`, editable in `WebPanel`; no hardcoded-only instance.
+- [x] `BrowserView` attach/detach lifecycle wired (`BrowserController` + `BrowserPane` ResizeObserver bounds sync).
+- [ ] Run the app end-to-end: launch agent, exercise each new tool, confirm DB tables populate. *(Not yet — requires a GUI session; not runnable in this headless context.)*
+- [ ] `BrowserView` **crash recovery** (`render-process-gone`) — still unhandled.
 - [ ] Test bundle round-trip: export → fresh install → import → verify signature.
 - [ ] Benchmark harness: confirm graceful behavior with zero installed Ollama models.
 - [ ] Time-travel fork: regression-test that snapshots replay deterministically.
