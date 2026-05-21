@@ -1,11 +1,32 @@
 # Artha — Session Progress & Resume Log
 
-**Last updated:** 2026-05-19
+**Last updated:** 2026-05-21
 **Branch:** `main` — in sync with `origin/main` (everything pushed)
 **Tests:** 37 passing (`npm test`) · **Typecheck:** clean (`npm run typecheck`)
-**Repo:** https://github.com/Noopurtrivedi/artha
+**Repo:** https://github.com/Noopurtrivedi/artha (now **PUBLIC**)
 
 > Resume point for the next session. Read this first to know exactly where we left off.
+
+---
+
+## 2026-05-21 session — v0.1.0 SHIPPED 🚀
+
+The first public release is live and the launch loose ends are closed:
+
+- **`v0.1.0` released** → https://github.com/Noopurtrivedi/artha/releases/tag/v0.1.0 — macOS dmg (arm64 + x64), Windows nsis `.exe`, Linux `.deb`, plus auto-update `latest*.yml`. Verified anonymously: `releases/latest` 200, `.dmg` 200.
+- **Release CI fix** (`96a1427`): first tag failed on all 3 OSes — root `package.json` had no `main` field so electron-builder looked for `index.js`. Added `"main": "packages/app/dist/main.js"` + `author`; dropped `mac/win/linux` icon refs (empty `assets/` → default Electron icon). Verified locally with a real `--dir` pack before re-tagging.
+- **BrowserView crash recovery** (`797a890`): `render-process-gone` → one silent reload of last URL → recovery overlay + `browser:recover` IPC if it recrashes within 10s. (Resolves the §1/§10 open item in `docs/requirement.md`.)
+- **Smoke test passed** on real hardware (Ollama, `qwen2.5:7b` chosen as the agent default — best tool-calling/streaming of the installed models). Boots clean, DB seeds the 5 built-in skills, streaming/skills/RAG confirmed good by owner.
+- **Landing page deployed** → https://artha-zeta-five.vercel.app (Vercel project `artha`; bare `artha.vercel.app` was taken). Download button points at `releases/latest` (now live).
+- **Repo made public** after a clean secret scan (working tree + full history: no keys, no committed `.env`). Enabled secret scanning + push protection + Dependabot alerts.
+
+### Decisions made this session
+- **GitHub org**: owner chose **stay personal** (`Noopurtrivedi/artha`) for v0.1.0 — §8's deferred org migration is now explicitly punted past launch (note the auto-update-URL caveat if migrating after installs exist).
+
+### Follow-ups (not blocking)
+- **Branded app icons**: `assets/` is empty; v0.1.0 ships the default Electron icon. Add `icon.icns/.ico/.png` and restore the icon refs in `package.json` build config before a polished release.
+- **Crash recovery is unverified live**: implemented + typechecks, but never exercised against a real renderer crash. Restart the dev app (main process needs reload) and force a page crash to confirm the overlay + reload path.
+- macOS/Windows builds are **unsigned** (CI logged skipped code signing) — Gatekeeper/SmartScreen warnings on install until signing is set up (Phase 2 per §8).
 
 ---
 
