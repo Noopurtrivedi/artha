@@ -1,9 +1,9 @@
 # Artha — Production Launch Requirements
 
-**Status:** Draft v3
+**Status:** Draft v4
 **Owner:** Noopur Trivedi
 **Target Phase 1 launch:** Within 2 weeks of approval
-**Last updated:** 2026-05-24 (Step 2 complete)
+**Last updated:** 2026-05-24 (Step 3 complete)
 
 ---
 
@@ -295,6 +295,33 @@ Documented here so the architecture decisions today don't block it later. **Not 
 
 #### CI — GitHub Actions
 - **`.github/workflows/ci.yml`:** Three jobs — `typecheck` (`tsc --noEmit` on both packages), `lint` (`npm run lint --if-present`), `test` (`npm test --if-present`). Triggered on push and PR to `main`. Node 22, `npm ci` with npm cache.
+
+### Step 3 — High-Value Additions (implemented 2026-05-24, all TypeScript clean)
+
+#### 3A — Voice Input
+- **UI (`ChatWindow.tsx`):** Mic button (Lucide `Mic`/`MicOff`) in composer. `toggleVoice()` uses `webkitSpeechRecognition` (Chromium built-in) with `continuous=true` and `interimResults=true`. Live transcript is appended to the textarea as the user speaks; `send()` stops recognition before sending. Mic button pulses red while active (`animate-pulse bg-red-500/20`).
+
+#### 3B — Agent Memory
+- **New file:** `packages/app/src/tools/memory.ts` — `MEMORY_TOOL_SCHEMAS`: three agent tools (`memory_store` upsert by name, `memory_recall` LIKE search, `memory_forget` delete by ID). `invokeMemoryTool()` dispatches to SQLite `memory_entities` table. `getMemoryContext()` loads the 20 most-recently-updated memories as a formatted preamble.
+- **DB:** `memory_entities` table in `schema.ts` — `(entity_id UUID, name, entity_type ENUM, content, tags_json, source_session_id, created_at, updated_at)` with indexes on `name` and `updated_at`.
+- **Orchestrator (`orchestrator.ts`):** `MEMORY_TOOL_SCHEMAS` spread into the tools array in `runReactLoop`; `isMemoryTool`/`invokeMemoryTool` called before `registry.invokeTool` in the dispatch block; `getMemoryContext()` injected into the system prompt above the skill block; Rule 13 instructs the model to use memory tools proactively.
+- **IPC:** `memory:{list, delete, clear}` channels in `handlers.ts`.
+- **Preload:** `window.artha.memory.{list, delete, clear}` bridge with full TypeScript types.
+- **UI:** `MemoryPanel.tsx` — lists all stored entities with type badge (fact/preference/person/project/decision/other), content preview, tags, last-updated date; hover-reveal delete button; clear-all with confirmation dialog; empty state.
+- **Routing:** `'memory'` added to `ActiveView` union; `Brain` icon in Sidebar nav; `App.tsx` renders `<MemoryPanel />` on that view.
+
+#### 3C — Native Notifications
+- **New file:** `packages/app/src/notify.ts` — `sendNotification(title, body, focusOnClick?)` checks `Notification.isSupported()` and the user's `notifications_enabled` setting before firing an Electron `Notification`. Click handler brings the main window to focus.
+- **Orchestrator:** fires `sendNotification('Artha — task complete', goalSnippet)` at the end of `runReactLoop` when workflow elapsed > 10 seconds (so short tasks don't spam).
+- **Scheduler:** fires `sendNotification('Artha — scheduled task complete', taskName)` after each scheduled task's agent run completes.
+- **UI:** `SettingsPanel.tsx` — Notifications toggle (Bell/BellOff icon + custom toggle switch); persists via `window.artha.settings.set({notifications_enabled: bool})`.
+- **Routing:** `'settings'` view (already in `ActiveView`) now renders `<SettingsPanel />` instead of the previous stub.
+
+#### 3D — IDE Integration
+- **IPC handlers (`handlers.ts`):** `ide:generateMcpConfig` — writes `.vscode/mcp.json` or `.cursor/mcp.json` into a given project folder and reveals the file in Finder. `ide:pickProjectAndGenerate` — wraps a folder picker dialog then calls the same generation logic.
+- **Preload:** `window.artha.ide.{generateMcpConfig, pickProjectAndGenerate}` bridge.
+- **UI:** `IDEIntegrationPanel.tsx` — IDE picker (VS Code / Cursor), port input (default 3847), live JSON config preview, "Choose project folder & generate" button, success state with file path display, error state, next-steps guide explaining how to open the editor after generation.
+- **Routing:** `'ide'` added to `ActiveView` union; `Code2` icon in Sidebar nav; `App.tsx` renders `<IDEIntegrationPanel />` on that view.
 
 ---
 
