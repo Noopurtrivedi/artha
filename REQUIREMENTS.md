@@ -1,9 +1,9 @@
 # Artha — Production Launch Requirements
 
-**Status:** Draft v2
+**Status:** Draft v3
 **Owner:** Noopur Trivedi
 **Target Phase 1 launch:** Within 2 weeks of approval
-**Last updated:** 2026-05-24
+**Last updated:** 2026-05-24 (Step 2 complete)
 
 ---
 
@@ -265,6 +265,36 @@ Documented here so the architecture decisions today don't block it later. **Not 
 - **New file:** `packages/app/src/tools/duckduckgo.ts` — DuckDuckGo HTML scraper; zero-config fallback.
 - **`web.ts`:** `WebConfig` extended with optional `brave_api_key`. `webSearchImpl` now uses a three-tier priority chain: Brave (if key set) → SearXNG instances → DuckDuckGo HTML. Result JSON includes `provider` field so the agent knows which backend was used.
 - **UI:** `WebPanel.tsx` — new provider priority status card (shows which backends are active/inactive); Brave API key input field (password masked, clear button).
+
+### Step 2 — Medium Wins (implemented 2026-05-24, all TypeScript clean)
+
+#### 2A — Multimodal / Vision (Image Attachment)
+- **Orchestrator:** `Attachment` interface + `attachments?` field on `AgentPlan`. Private `buildUserContent()` converts plain text or text+images into OpenAI vision format (`[{type:'text',…}, {type:'image_url', image_url:{url:'data:mime;base64,…'}}]`). `executePlan` passes `buildUserContent(plan.goal, plan.attachments)` as the first user turn.
+- **IPC:** `dialog:pickImage` handler opens native file dialog, reads the selected file as base64, returns `{name, mime, data, path}`. `agent:sendMessage` updated signature forwards optional `attachments[]`.
+- **Preload:** `agent.pickImage()` and `agent.sendMessage(…, attachments?)` bridge.
+- **Store:** `MessageAttachment` interface + `pendingAttachments` state + `setPendingAttachments` action in `chat.ts`. `Message.attachments?` field for bubble display.
+- **UI (`ChatWindow.tsx`):** Paperclip button (Lucide `Paperclip`) in composer opens image picker. Pending thumbnail strip with per-thumbnail ✕ button renders above composer. User message bubble renders `<img>` tags for any stored `attachments`.
+
+#### 2B — PDF Visual Reading
+- **IPC:** `dialog:pickPdf` handler opens PDF file dialog, runs `pdftoppm -r 150 -png -l 20 <pdf> <tmpDir>/page` (requires Poppler, available on all platforms via package managers), reads the output PNG files as base64, cleans up the temp dir, returns `{pdfName, pages:[{name, mime:'image/png', data}]}`. Capped at 20 pages to prevent context flooding.
+- **Preload:** `agent.pickPdf()` bridge.
+- **UI (`ChatWindow.tsx`):** PDF button (Lucide `FileText`) in composer next to the paperclip. `attachPdf()` calls `pickPdf` and appends all rendered page images to `pendingAttachments`. Pages then flow through the identical vision pipeline as direct image attachments.
+
+#### 2C — Persistent Artifacts Panel
+- **DB:** `artifacts` table in `schema.ts` — `(artifact_id, session_id, name, file_path, file_type, size_bytes, created_at)` with a `created_at DESC` index.
+- **Auto-logging:** `docs.ts` `invokeDocsTool` inserts a row after every successful `docs_generate` call (file size from `fs.statSync`). Non-fatal — wrapped in try/catch.
+- **IPC:** `artifacts:{list, log, delete, open}` channels in `handlers.ts`. `open` uses `shell.openPath`.
+- **Preload:** `window.artha.artifacts.{list, log, delete, open}` bridge with full TypeScript types.
+- **UI:** `ArtifactsPanel.tsx` — loads on mount, shows file icon (colour-coded by type), name, type, size, date, file path; hover-reveal open/delete buttons; empty state; refresh button.
+- **Routing:** `'artifacts'` added to `ActiveView` union; `Archive` icon in Sidebar nav; `App.tsx` renders `<ArtifactsPanel />` on that view.
+
+#### 2D — Plugin Marketplace
+- **Catalog:** `packages/app/src/mcp/registry-catalog.ts` — 14 curated MCP server entries across 7 categories (filesystem, web, productivity, data, dev, communication, ai), each with `id, name, description, installUri, category, icon, author, tools, docsUrl`.
+- **UI:** `MarketplacePanel.tsx` — catalog inlined for renderer bundle safety (no Node imports). Category filter tabs + full-text search across name/description/tools. Install button calls `window.artha.mcp.installServer(entry.installUri)`. Post-install green "Installed" badge (session state).
+- **Routing:** `'marketplace'` added to `ActiveView` union; `Store` icon in Sidebar nav; `App.tsx` renders `<MarketplacePanel />` on that view.
+
+#### CI — GitHub Actions
+- **`.github/workflows/ci.yml`:** Three jobs — `typecheck` (`tsc --noEmit` on both packages), `lint` (`npm run lint --if-present`), `test` (`npm test --if-present`). Triggered on push and PR to `main`. Node 22, `npm ci` with npm cache.
 
 ---
 
