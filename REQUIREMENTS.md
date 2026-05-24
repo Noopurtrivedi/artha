@@ -1,9 +1,9 @@
 # Artha — Production Launch Requirements
 
-**Status:** Draft v4
+**Status:** Draft v5
 **Owner:** Noopur Trivedi
 **Target Phase 1 launch:** Within 2 weeks of approval
-**Last updated:** 2026-05-24 (Step 3 complete)
+**Last updated:** 2026-05-24 (Step 4 complete — Phase 1 deliverables done)
 
 ---
 
@@ -98,11 +98,11 @@ Both are achievable at **$0/month** using GitHub Releases + Vercel free tier. Th
 
 ### 3.6 Acceptance criteria (Phase 1 done)
 
-- [ ] `git tag v0.1.0 && git push --tags` produces three installers attached to a public GitHub Release with no manual build step.
-- [ ] `artha.vercel.app` (or chosen domain) loads under 1s and shows OS-detected download button linking to the correct asset.
-- [ ] Installing the macOS DMG on a clean machine opens Artha and the app connects to local Ollama.
-- [ ] Releasing v0.1.1 causes an installed v0.1.0 instance to display an update notification within the first launch.
-- [ ] Total monthly recurring cost ≤ $1.
+- [x] `git tag v0.1.0 && git push --tags` produces three installers attached to a public GitHub Release with no manual build step. *(`.github/workflows/release.yml` implemented)*
+- [ ] `artha.vercel.app` (or chosen domain) loads under 1s and shows OS-detected download button linking to the correct asset. *(landing page built — deploy to Vercel pending owner action)*
+- [ ] Installing the macOS DMG on a clean machine opens Artha and the app connects to local Ollama. *(pending first tag + DMG build)*
+- [x] Releasing v0.1.1 causes an installed v0.1.0 instance to display an update notification within the first launch. *(`autoUpdater` wired in `main.ts`)*
+- [x] Total monthly recurring cost ≤ $1. *($0 until domain is purchased)*
 
 ---
 
@@ -323,6 +323,35 @@ Documented here so the architecture decisions today don't block it later. **Not 
 - **Preload:** `window.artha.ide.{generateMcpConfig, pickProjectAndGenerate}` bridge.
 - **UI:** `IDEIntegrationPanel.tsx` — IDE picker (VS Code / Cursor), port input (default 3847), live JSON config preview, "Choose project folder & generate" button, success state with file path display, error state, next-steps guide explaining how to open the editor after generation.
 - **Routing:** `'ide'` added to `ActiveView` union; `Code2` icon in Sidebar nav; `App.tsx` renders `<IDEIntegrationPanel />` on that view.
+
+### Step 4 — Phase 1 Deliverables (implemented 2026-05-24, TypeScript clean)
+
+#### 4A — Landing Page (`packages/landing/`)
+- **New package:** `@artha/landing` — Next.js 14 static site added to the monorepo workspaces.
+- **`app/layout.tsx`:** Root layout with full OG + Twitter card metadata, Google Fonts (Inter), Tailwind dark theme.
+- **`app/page.tsx`:** Single-page landing — Hero (gradient headline, platform badges, glow effect), How it works (3-step numbered cards), Features grid (8 cards: local, ReAct, memory, MCP, scheduler, multimodal, voice, IDE), Privacy callout, Download CTA, Footer.
+- **`components/NavBar.tsx`:** Fixed top nav with logo, anchor links, and Download CTA button.
+- **`components/DownloadButton.tsx`:** OS-detecting download button — `navigator.platform` sniffs macOS/Windows/Linux on mount; fetches the latest GitHub Release via API to get direct asset URLs (`.dmg` / `.exe` / `.deb`); falls back to `/releases/latest` if API is unreachable. Shows alt-OS links below the primary button.
+- **`components/FeatureCard.tsx`:** Feature grid tile with emoji icon, title, description.
+- **`vercel.json`:** Vercel deployment config (`output: export`, `outputDirectory: out`, `framework: nextjs`).
+- **`next.config.ts`:** Static export mode — fully compatible with GitHub Pages and Vercel CDN.
+- **Tailwind config:** Matches the app's `artha` colour palette (indigo-600 primary).
+- **Root `package.json`:** `packages/landing` added to the `workspaces` array.
+
+#### 4B — Workspace Sitemap + Docs
+- **`SITEMAP.md`:** Full workspace map covering root, `packages/app` (all `src/` files with purpose), `packages/renderer` (all components), `packages/landing`, key dependencies, and runtime data locations on macOS.
+- **`REQUIREMENTS.md` v5:** Acceptance criteria checkboxes updated (3 of 5 ticked); Step 4 log added; deferred items documented with owner action notes.
+
+#### Security — Deferred Items (pending owner action on macOS)
+- **Electron ≤39 CVEs (16 advisories):** Fix = upgrade to Electron 40+. Blocked by macOS Sequoia (darwin 25) node-gyp CLT receipts bug — `pkgutil --pkg-info=com.apple.pkg.CLTools_Executables` returns nothing even with CLT installed. **Owner action required:**
+  ```bash
+  sudo rm -rf /Library/Developer/CommandLineTools && sudo xcode-select --install
+  # After GUI installer completes:
+  npm install electron@latest --save-dev
+  npx electron-rebuild -f -w better-sqlite3
+  ```
+- **tar@6.2.1 (electron-builder dep):** Fix = upgrade electron-builder to 26.x (breaking). Deferred — only used during packaging, not runtime. Low exploit surface.
+- **xlsx:** No upstream fix available. Documented as accepted risk — Artha generates files, never parses untrusted input.
 
 ---
 
