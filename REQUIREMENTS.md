@@ -3,7 +3,7 @@
 **Status:** Draft v5
 **Owner:** Noopur Trivedi
 **Target Phase 1 launch:** Within 2 weeks of approval
-**Last updated:** 2026-05-24 (Step 4 complete — Phase 1 deliverables done)
+**Last updated:** 2026-05-26 (dependency-security remediation + runtime DB fix)
 
 ---
 
@@ -198,7 +198,7 @@ Documented here so the architecture decisions today don't block it later. **Not 
 | Auto-update fails silently | Medium | Low | Log update-check results to user-visible diagnostics panel |
 | Large model downloads make first-run UX painful | High | Medium | Default to smallest viable model (`llama3.2:3b-instruct-q4_K_M`); show download progress in app |
 | License compatibility with `OpenCoworkAI/open-cowork`, `OpenHands`, `Jan AI` | Low | High if missed | Verify all upstream licenses are MIT-compatible; include attributions in `LICENSE` / About panel |
-| `xlsx` (SheetJS CE) prototype pollution + ReDoS — GHSA-4r6h-8v6p-xvw6, GHSA-5pgg-2g8v-p4x9 | Low | Low (local-only threat model) | **Accepted risk for v0.1.** No patched release exists for SheetJS CE. Artha only *generates* xlsx (not parsing untrusted input); RAG indexer reads user's own local files. Blast radius = local machine already under user control. **Action:** migrate `rag/extract.ts` and `docs/generator.ts` from `xlsx` to `exceljs` (maintained, no known CVEs) before any multi-user or server-side deployment. Track as tech debt issue. |
+| `xlsx` (SheetJS CE) prototype pollution + ReDoS — GHSA-4r6h-8v6p-xvw6, GHSA-5pgg-2g8v-p4x9 | Low | Low (local-only threat model) | **RESOLVED (2026-05-26).** Pinned the maintainer's patched build from the SheetJS CDN (`xlsx@https://cdn.sheetjs.com/xlsx-0.20.3/...`) — the npm registry copy is frozen at the vulnerable 0.18.5. The CDN build is ESM and does not auto-wire Node's `fs`, so `rag/extract.ts` and `docs/generator.ts` were switched to buffer-based `XLSX.read`/`XLSX.write`. `exceljs` migration no longer required. |
 
 ---
 
@@ -342,16 +342,14 @@ Documented here so the architecture decisions today don't block it later. **Not 
 - **`SITEMAP.md`:** Full workspace map covering root, `packages/app` (all `src/` files with purpose), `packages/renderer` (all components), `packages/landing`, key dependencies, and runtime data locations on macOS.
 - **`REQUIREMENTS.md` v5:** Acceptance criteria checkboxes updated (3 of 5 ticked); Step 4 log added; deferred items documented with owner action notes.
 
-#### Security — Deferred Items (pending owner action on macOS)
-- **Electron ≤39 CVEs (16 advisories):** Fix = upgrade to Electron 40+. Blocked by macOS Sequoia (darwin 25) node-gyp CLT receipts bug — `pkgutil --pkg-info=com.apple.pkg.CLTools_Executables` returns nothing even with CLT installed. **Owner action required:**
-  ```bash
-  sudo rm -rf /Library/Developer/CommandLineTools && sudo xcode-select --install
-  # After GUI installer completes:
-  npm install electron@latest --save-dev
-  npx electron-rebuild -f -w better-sqlite3
-  ```
-- **tar@6.2.1 (electron-builder dep):** Fix = upgrade electron-builder to 26.x (breaking). Deferred — only used during packaging, not runtime. Low exploit surface.
-- **xlsx:** No upstream fix available. Documented as accepted risk — Artha generates files, never parses untrusted input.
+#### Security — RESOLVED (2026-05-26)
+- **Electron pinned to `^41.7.0`.** ⚠️ Do **not** run `npm install electron@latest` — Electron 42 (current `latest`) ships a V8 that **no `better-sqlite3` build compiles against**, which leaves the app with no working database (every data panel silently empty). 41.x is the newest Electron the native driver supports and is within Electron's security-patched window. The CLT receipts bug is resolved (CLT reinstalled), so native rebuilds work.
+- **`better-sqlite3` upgraded to `^12.2.0`** (C++20-capable) and rebuilt against Electron's ABI automatically via the root `postinstall` hook (`scripts/rebuild-native.js`, which skips in CI). This is what prevents the binary from going missing again.
+- **`electron-builder` upgraded 24 → 26** — clears the high-severity `tar` path-traversal chain. Build-time only.
+- **`vitest` upgraded 2 → 3** (vite 7, esbuild 0.27) — clears the dev-server esbuild advisory. Dev/test only.
+- **`next` (landing) upgraded 14 → 16 + React 19** — clears the Next.js advisories (none applied to the static `output:'export'` site anyway).
+- **`xlsx`** — patched via the SheetJS CDN build 0.20.3 (see Risks table). 
+- **Residual:** 2 moderate (a nested `postcss` inside Next's build toolchain) with no non-downgrade fix; build-time only on trusted Tailwind CSS. `npm audit` went 13 → 2.
 
 ---
 
