@@ -1,11 +1,27 @@
 # Artha — Session Progress & Resume Log
 
-**Last updated:** 2026-05-21
+**Last updated:** 2026-05-26
 **Branch:** `main` — in sync with `origin/main` (everything pushed)
-**Tests:** 37 passing (`npm test`) · **Typecheck:** clean (`npm run typecheck`)
+**Tests:** 73 passing (`npm test`) · **Typecheck:** clean (`npm run typecheck`) · **Lint:** clean
 **Repo:** https://github.com/Noopurtrivedi/artha (now **PUBLIC**)
 
 > Resume point for the next session. Read this first to know exactly where we left off.
+
+---
+
+## 2026-05-26 — per-chat scopes + install fix; prepping `v0.2.0`
+
+Landed on `main` since the `v0.1.1` release (see `CHANGELOG.md` for the full list):
+
+- **Per-chat folder/file scopes + hard filesystem sandbox + folder-scoped RAG** (PR #1, merged). Replaces the global project switcher: folders are attached per chat in the composer; the agent is confined to them and answers folder questions by reading the injected file tree directly. New: `db/scopes.ts`, `agent/folderTree.ts`, `session_scopes` table. Tests: `filesystem.sandbox` (7), `rag.scope` (6), `folderTree` (6).
+- **Install/CI fix** (PR #2, merged): `@nut-tree/nut-js` was pulled from npm (404) → swapped to optional `@nut-tree-fork/nut-js`; `npm install`/`npm ci` work again.
+
+**Release prep (this branch `chore/release-0.2.0`):** all `package.json` versions bumped `→ 0.2.0`; `CHANGELOG.md` added (backfilled 0.1.0/0.1.1). **Tag not yet pushed** — `git tag v0.2.0 && git push --tags` triggers `release.yml` (builds DMG/EXE/DEB + auto-update feeds). Note: `v0.1.1` is already released, so 0.1.x was skipped; this is a minor bump for the accumulated features (team mode, cloud integrations, per-chat scopes, 70B models).
+
+### Follow-ups (not blocking the release)
+- `ollama pull nomic-embed-text` is required for semantic `rag_search` to return passages; without it scoped chats fall back to direct file reads.
+- Optional UX: an "indexing…" indicator on folder chips until the RAG index is ready.
+- Dependabot: 14 stale `next` alerts (already on 16.x) should auto-close; 1 build-time `postcss` transitive in the static landing site is non-exploitable.
 
 ---
 
