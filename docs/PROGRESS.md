@@ -1,11 +1,51 @@
 # Artha — Session Progress & Resume Log
 
-**Last updated:** 2026-05-21
-**Branch:** `main` — in sync with `origin/main` (everything pushed)
-**Tests:** 37 passing (`npm test`) · **Typecheck:** clean (`npm run typecheck`)
-**Repo:** https://github.com/Noopurtrivedi/artha (now **PUBLIC**)
+**Last updated:** 2026-05-26
+**Branch:** `chore/release-0.2.0` (PR #3 open) · `main` @ `bbe4c73` after PRs #1 + #2 merged
+**Tests:** 73 passing (`npm test`) · **Typecheck:** clean · **Lint:** clean
+**Repo:** https://github.com/Noopurtrivedi/artha (PUBLIC)
 
 > Resume point for the next session. Read this first to know exactly where we left off.
+
+---
+
+## 2026-05-26 — per-chat scopes + install fix; `v0.2.0` prepped (NOT yet tagged)
+
+### TL;DR — pick up here on restart
+The big feature (per-chat folder scopes) and the broken-install fix are **merged to `main`**. The release is **staged but not shipped**: PR #3 bumps to 0.2.0 + adds the CHANGELOG. To finish the release: **merge PR #3, then `git tag v0.2.0 && git push --tags`** (that tag is the only thing that triggers the installer build — nothing ships until you push it).
+
+### What was built this session (3 workstreams)
+
+**1. Per-chat folder/file scopes — PR #1 (MERGED, `3885dbe`+`bbe4c73`).**
+The headline feature. Replaces the old global "project switcher" with folders/files attached **per chat**.
+- Attach folders + individual files from the composer (chip row: Add Folder / Add File, per-folder re-index ↻). Sidebar is now a flat session list.
+- **Hard filesystem sandbox**: when a chat has scopes, file tools reject reads/writes outside them (folder = subtree, file = exact path). Unscoped chats keep home-dir-wide access.
+- **Folder-scoped RAG**: `rag_search` / `rag_list_indexes` / doc grounding confined to the chat's folder indexes when scoped (Cowork-style — but keeps semantic vector search). Folders auto-index in the background; folder workspaces reuse the `projects` table (deduped by path) to share one index + cross-session memory.
+- **Folder-tree context** (`agent/folderTree.ts`): the agent now answers "what is this app?" by reading the injected file tree (README/manifests) directly — works even before the index finishes building. This fixed the "no relevant passages" bug the owner hit.
+- New files: `db/scopes.ts`, `agent/folderTree.ts`, `session_scopes` table. Tests: `filesystem.sandbox` (7) + `rag.scope` (6, mocked) + `folderTree` (6).
+
+**2. Broken-install fix — PR #2 (MERGED, `5d62d1e`).**
+`@nut-tree/nut-js@^4.2.0` was removed from public npm (404) → `npm install`/`npm ci` failed for everyone (incl. release CI). Swapped to the maintained, API-compatible fork **`@nut-tree-fork/nut-js@^4.2.6`** as an **optionalDependency**; native rebuild moved into root `scripts/rebuild-native.js` (guarded, non-fatal). Desktop control is the only consumer (lazy, opt-in) — nothing else affected.
+
+**3. Release prep — PR #3 (OPEN, `chore/release-0.2.0`).**
+All workspace `package.json` → **0.2.0**; added `CHANGELOG.md` (Keep a Changelog; backfilled 0.1.0/0.1.1); refreshed this log + `SITEMAP.md`. **Why 0.2.0, not 0.1.1:** `v0.1.1` is already tagged + the current GitHub "Latest" release; many features landed since (team mode, cloud integrations, per-chat scopes, 70B models) → minor bump. (Switch to 0.1.2 if you'd rather call it a patch — it's just the branch.)
+
+### PENDING — ordered, to resume
+1. **Review + merge PR #3** (release bump + CHANGELOG). https://github.com/Noopurtrivedi/artha/pull/3
+2. **Ship 0.2.0:** `git tag v0.2.0 && git push --tags` → `release.yml` builds DMG/EXE/DEB + auto-update feeds → GitHub Release. *(Only do this when ready to publish.)*
+3. **Re-test the folder chat** on `main`: attach a folder, ask "tell me about this app" — should read README/manifest directly now.
+4. **`ollama pull nomic-embed-text`** — required for semantic `rag_search` to return passages; without it, scoped chats fall back to direct file reads (still works, no embeddings).
+
+### Backlog / optional (not blocking)
+- **UX:** "indexing…" indicator on folder chips until the RAG index is ready (the last bit of confusion from the bug report).
+- **Dependabot:** 14 `next` alerts are stale (main already on 16.2.6) and should auto-close; the lone `postcss` alert is `next`'s bundled build-time copy in the static landing site — non-exploitable. No code action needed.
+- **RAG scope nuance:** retrieval is confined to the chat's folders, but the underlying `searchAllIndexes` still ranks globally when unscoped — fine as-is.
+
+### Gotchas / notes for next session
+- Working dir is on `chore/release-0.2.0` with the nut-js fork installed. `main` is clean at `bbe4c73`.
+- Earlier this session local `main` had a duplicate team-mode commit (`2bc3b89`) vs remote (`a0abd86`) — resolved by `reset --hard origin/main` (identical trees, nothing lost). If history looks odd, trust `origin/main`.
+- `docs/gtm/` is untracked and **not mine** (owner's GTM drafts) — left alone, never committed.
+- Desktop control's `desktop_find_on_screen` is a no-op until an image-matching provider is installed (pre-existing, unchanged).
 
 ---
 
