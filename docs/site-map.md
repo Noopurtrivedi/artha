@@ -8,6 +8,7 @@ The index of Artha's docs — what each one is for and when to read it. For the
 
 | Doc | Read it when you want to… |
 |---|---|
+| [`user-guide.md`](./user-guide.md) | Be a first-time, non-technical **user** — install → first model → first document, in plain English. |
 | [`getting-started.md`](./getting-started.md) | Run, build, or develop locally (prereqs, commands, native rebuilds, data paths). |
 | [`idea-inbox-mvp-roadmap.md`](./idea-inbox-mvp-roadmap.md) | Know what we're building, MVP scope (in/out), current status, and the roadmap + idea backlog. |
 | [`feature-deep-dive.md`](./feature-deep-dive.md) | Understand how each major feature works and where its code lives. |
@@ -32,7 +33,8 @@ The index of Artha's docs — what each one is for and when to read it. For the
 ```
 What & why ........ idea-inbox-mvp-roadmap.md  ·  Artha_PRD_v4.0.md
 How it works ...... feature-deep-dive.md  ·  architecture.md  ·  SITEMAP.md (code)
-How to run it ..... getting-started.md  ·  README.md
+How to use it ..... user-guide.md (end users)
+How to run it ..... getting-started.md  ·  README.md (developers)
 Where we are ...... DEVELOPMENT_LOG.md (decisions)  ·  PROGRESS.md (journal)  ·  CHANGELOG.md (releases)
 ```
 
