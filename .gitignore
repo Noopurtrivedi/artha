@@ -10,6 +10,8 @@ dist/
 
 # Electron builder
 release/
+# but keep the landing site's API route source files
+!landing/app/api/release/
 
 # Environment
 .env
@@ -34,6 +36,9 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# License signing key — NEVER commit. Seller-only, lives at ~/.artha-license-key.pem.
+*.pem
 
 # LLM models (large files — use .artha/models/)
 *.gguf
